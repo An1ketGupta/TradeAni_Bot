@@ -351,4 +351,14 @@ bot.callbackQuery("closeHandler", async (ctx) => {
     await ctx.deleteMessage();
 });
 
+// Health check server for Render
+const server = Bun.serve({
+    port: process.env.PORT || 3000,
+    fetch(req) {
+        return new Response("Bot is running!", { status: 200 });
+    },
+});
+
+console.log(`Health server running on port ${server.port}`);
+
 bot.start();
