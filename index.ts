@@ -1,17 +1,6 @@
-import {
-    Connection,
-    Keypair,
-    LAMPORTS_PER_SOL,
-    PublicKey,
-    VersionedTransaction
-} from "@solana/web3.js";
-import {
-    Bot,
-    Context,
-    InlineKeyboard,
-    session,
-    type SessionFlavor
-} from "grammy";
+import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, VersionedTransaction } from "@solana/web3.js";
+import { Bot, Context, InlineKeyboard, session, type SessionFlavor } from "grammy";
+
 import axios from "axios";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { startKeyboard, tokenBuyKeyboard, tokenSellKeyboard } from "./keyboards";
@@ -23,6 +12,14 @@ import {
     updateCurrentSellToken,
     getCurrentSellToken
 } from "./db";
+
+const server = Bun.serve({
+    port: process.env.PORT || 3000,
+    fetch(req) {
+        return new Response("Bot is running!", { status: 200 });
+    },
+});
+
 
 const rpcConnection = new Connection(process.env.ARPC_URL!);
 
@@ -351,14 +348,26 @@ bot.callbackQuery("closeHandler", async (ctx) => {
     await ctx.deleteMessage();
 });
 
-// Health check server for Render
-const server = Bun.serve({
-    port: process.env.PORT || 3000,
-    fetch(req) {
-        return new Response("Bot is running!", { status: 200 });
-    },
-});
+bot.callbackQuery("fundHandler" ,async (ctx)=>{
+    await ctx.answerCallbackQuery("Fetching details");
+    if(!ctx.from.id){
+        return ctx.reply("No user detected.")
+    }
+    const userId = ctx.from.id;
+    const userKeypair = await getUserKeypair(userId);
+    if (!userKeypair) return;
 
-console.log(`Health server running on port ${server.port}`);
+    await ctx.reply("Use moonpay to fund your wallet -- https://www.moonpay.com/buy/sol ")
+})
+
+bot.callbackQuery("walletHandler",async (ctx)=>{
+    await ctx.answerCallbackQuery("Fetching details");
+    if(!ctx.from.id){
+        return ctx.reply("No user detected.")
+    }
+    const userId = ctx.from.id;
+    const userKeypair = await getUserKeypair(userId);
+    if (!userKeypair) return;
+})
 
 bot.start();
